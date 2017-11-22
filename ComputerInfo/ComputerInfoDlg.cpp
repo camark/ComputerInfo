@@ -7,62 +7,13 @@
 #include "ComputerInfoDlg.h"
 #include "afxdialogex.h"
 #include "Resource.h"
+#include "HardWareInfo.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
-#include "iphlpapi.h"
-#pragma comment(lib, "iphlpapi.lib")
 
-
-// 个人认为比较简单的方法，如下：
-// 增加头文件：#include "iphlpapi.h"
-// 包含库文件：#pragma comment(lib, "iphlpapi.lib")
-// iphlpapi.lib网上可以下载到。。。
-BOOL GetMacAddress(CString &strMac)
-{
-	PIP_ADAPTER_INFO pAdapterInfo;
-	DWORD AdapterInfoSize;
-	TCHAR szMac[32] = { 0 };
-	DWORD Err;
-
-	AdapterInfoSize = 0;
-	Err = GetAdaptersInfo(NULL, &AdapterInfoSize);
-
-	if ((Err != 0) && (Err != ERROR_BUFFER_OVERFLOW))
-	{
-		TRACE("获得网卡信息失败！");
-		return   FALSE;
-	}
-
-	//   分配网卡信息内存  
-	pAdapterInfo = (PIP_ADAPTER_INFO)GlobalAlloc(GPTR, AdapterInfoSize);
-	if (pAdapterInfo == NULL)
-	{
-		TRACE("分配网卡信息内存失败");
-		return   FALSE;
-	}
-
-	if (GetAdaptersInfo(pAdapterInfo, &AdapterInfoSize) != 0)
-	{
-		TRACE(_T("获得网卡信息失败！\n"));
-		GlobalFree(pAdapterInfo);
-		return   FALSE;
-	}
-
-	strMac.Format(_T("%02X-%02X-%02X-%02X-%02X-%02X"),
-		pAdapterInfo->Address[0],
-		pAdapterInfo->Address[1],
-		pAdapterInfo->Address[2],
-		pAdapterInfo->Address[3],
-		pAdapterInfo->Address[4],
-		pAdapterInfo->Address[5]);
-
-	GlobalFree(pAdapterInfo);
-	return   TRUE;
-
-}
 
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
@@ -113,6 +64,7 @@ void CComputerInfoDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_EDIT1, edt_ComputerName);
 	DDX_Control(pDX, IDC_EDIT2, edt_Mac);
+	DDX_Control(pDX, IDC_EDIT3, edt_MemorySize);
 }
 
 BEGIN_MESSAGE_MAP(CComputerInfoDlg, CDialogEx)
@@ -155,17 +107,27 @@ BOOL CComputerInfoDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 
-	const int MAX_LENGTH = MAX_COMPUTERNAME_LENGTH;
-	DWORD dwLength;
-	TCHAR buff[MAX_LENGTH];
-	::GetComputerName(buff, &dwLength);
-
-	CString computer_name = buff;
-	edt_ComputerName.SetWindowText(computer_name);
+	
+	CHardWareInfo hardwareinfo;
+	CString computer_name;
+	BOOL bret=hardwareinfo.GetComputerName(computer_name);
+	if (bret) {	
+		edt_ComputerName.SetWindowText(computer_name);
+	}
+	
 
 	CString mac;
-	GetMacAddress(mac);
-	edt_Mac.SetWindowText(mac);
+	if (hardwareinfo.GetMacAddress(mac)==TRUE)
+	{
+		edt_Mac.SetWindowText(mac);
+	}
+
+	CString memory;
+	if (hardwareinfo.GetMemSize(memory) == TRUE) {
+		edt_MemorySize.SetWindowText(memory);
+	}
+	
+	
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }

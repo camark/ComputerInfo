@@ -35,4 +35,5 @@ protected:
 public:
 	CEdit edt_ComputerName;
 	CEdit edt_Mac;
+	CEdit edt_MemorySize;
 };
